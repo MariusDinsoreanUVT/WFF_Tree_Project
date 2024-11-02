@@ -1,6 +1,8 @@
 import itertools
 import random
 
+
+
 def AtomicFormula(ch):
     return ord(ch) <= 65 + 26 and ord(ch) >= 65
 def SquareConnective(ch):
@@ -59,9 +61,6 @@ def neg(x):
     else:
         return True
 
-def GenerateInterpretation(n):
-    all_interpretations = list(itertools.product([True, False], repeat=n))
-    return random.choice(all_interpretations)
 
 def Generate_All_Interpretations(n):
     all_interpretations = list(itertools.product([True, False], repeat=n))
@@ -80,9 +79,11 @@ class Tree:
     def __init__(self):
         self.root = None
         self.leafs = []
+        self.formulas = []
         self.current_node = None
 
     def build_tree(self, WFF):
+        nr = 0
         for char in WFF:
             if char == "(":
                 if self.root == None:
@@ -112,6 +113,10 @@ class Tree:
             elif SquareConnective(char):
                 self.current_node.value = char
                 self.current_node = self.current_node.right
+            print("step ->", nr, end=" ")
+            self.Print_Tree(self.root)
+            print()
+            nr += 1
 
     def VerifyIfComplete(self, node):
         if node != None:
@@ -153,7 +158,12 @@ class Tree:
             elif AtomicFormula(node.value) == True:
                 return node.truth
 
-
+    def Print_Every_Formula(self, node):
+        if node != None:
+            self.Print_Every_Formula(node.left)
+            self.Print_Every_Formula(node.right)
+            if is_negation(node.value) == True or SquareConnective(node.value) == True:
+                self.formulas.append(node)
 
 WFF = str(input())
 while WFF != "*":
@@ -176,16 +186,19 @@ while WFF != "*":
     WFF_Tree.VerifyIfComplete(WFF_Tree.root)
     if WFF_Tree.root is None:
         WFF_Tree.root = Node()
+    # print(op, cp, con, length, WFF_Tree.root.nrnodes)
     if op == cp and con == op and length == WFF_Tree.root.nrnodes:
-        WFF_Tree.Print_Tree(WFF_Tree.root)
-        print()
+        print("It is a well formed propositional formula")
+
         used = dict()
         nr_diff_liefs = 0
         for i in WFF_Tree.leafs:
             if i.value not in used:
+                WFF_Tree.formulas.append(i)
                 used[i.value] = True
                 nr_diff_liefs += 1
 
+        WFF_Tree.Print_Every_Formula(WFF_Tree.root)
         All_Int = Generate_All_Interpretations(nr_diff_liefs)
         Nr_True_Int = 0
         Nr_All_Int = 2 ** nr_diff_liefs
@@ -207,14 +220,49 @@ while WFF != "*":
             print("The proposition is satisfiable")
         elif Nr_True_Int == 0:
             print("The proposition is unsatisfiable")
+
+        print("|     ", end = "")
+        for i in WFF_Tree.formulas:
+            WFF_Tree.Print_Tree(i)
+            if AtomicFormula(i.value) == True:
+                print("     |     ", end = "")
+            else:
+                print(" | ", end="")
+        print()
+        for row in range(Nr_All_Int):
+            print("|   ", end = "")
+            for nr in range(0, nr_diff_liefs):
+                Int = All_Int[row]
+                for i in WFF_Tree.leafs:
+                    if i.value == WFF_Tree.formulas[nr].value:
+                        i.truth = Int[nr]
+                if Int[nr] == True:
+                    print(Int[nr], "   |   ", end = "")
+                else:
+                    print(Int[nr], "  |   ", end = "")
+            for col in range(nr_diff_liefs, len(WFF_Tree.formulas)):
+                x = WFF_Tree.Solve_Interpretation(WFF_Tree.formulas[col])
+                if x == True:
+                    print(x, "   |   ", end="")
+                else:
+                    print(x, "  |   ", end="")
+            print()
+
+
     else:
         print("It is not a Well Formed Propositional Formula")
     WFF = str(input())
 
-
-#(((P ⇒ Q) ∨ S) ⇔ T)
-#((P ⇒ (Q ∧ (S ⇒ T))))
-#(¬(B(¬Q)) ∧ R)
-#((P⇒Q)∧((¬Q)∧P))
-#((P ⇒ Q) ⇒ (Q ⇒ P))
-#((¬(P ∨ Q)) ∧ (¬Q))
+# Homework 2
+# (((P ⇒ Q) ∨ S) ⇔ T)
+# ((P ⇒ (Q ∧ (S ⇒ T))))
+# (¬(B(¬Q)) ∧ R)
+# ((P⇒Q)∧((¬Q)∧P))
+# ((P⇒Q)⇒(Q⇒P))
+# ((¬(P ∨ Q)) ∧ (¬Q))
+# Homework 3
+# ((P ⇒ Q) ∧ ((¬Q) ∧ (¬P)))
+# ((P ⇒ Q) ⇒ ((Q ⇒ S) ⇒ ((P ∨ Q) ⇒ R)))
+# ((¬(P ⇒ Q)) ⇔ ((P ∨ R) ∧ ((¬P) ⇒ Q)))
+# ((P ⇔ Q) ⇔ (¬(P ⇒ (¬Q))))
+# ex 1 - (P⇒((¬(¬(¬(¬(¬B)))))⇔(Q∧S))) (F ∨ G)
